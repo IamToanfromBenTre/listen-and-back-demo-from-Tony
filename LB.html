@@ -61,6 +61,68 @@
             transform: translateX(-50%);
             width: 800px;
             height: 463px;
+            background: #000;
+        }
+
+        /* ===== Điều khiển riêng: nằm sát 2 góc dưới, chừa trống giữa cho phụ đề ===== */
+        #custom-controls {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 12px;
+            padding: 0 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none; /* vùng giữa không chặn click vào video */
+            z-index: 5;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .ctrl-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.55);
+            border-radius: 16px;
+            padding: 0 12px;
+            height: 32px;
+            color: #fff;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .ctrl-btn {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            padding: 0;
+            font-family: inherit;
+        }
+        .ctrl-btn:hover { color: #00ff73; }
+
+        /* Thanh tua mỏng sát đáy video */
+        #seek-bar {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            z-index: 6;
+            transition: height 0.1s;
+        }
+        #seek-bar:hover { height: 10px; }
+        #seek-fill {
+            height: 100%;
+            width: 0%;
+            background: #ff0000;
+            pointer-events: none;
         }
 
         #input-url {
@@ -124,7 +186,7 @@
         }
         #progress-bar-blue.active {
             background-color: #00ff73;
-            transition: background-color 0.15s ease; 
+            transition: background-color 0.15s ease;
         }
 
         #replay-button {
@@ -137,18 +199,16 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            transition: background-color 0.15s ease; 
+            transition: background-color 0.15s ease;
         }
 
         #replay-button:hover {
-            background-color: #888888; /* Màu nền khi hover */
+            background-color: #888888;
         }
 
-        /* Khi phần tử đang bị click */
         #replay-button:active {
-            background-color: #555555; /* Màu nền khi click */
+            background-color: #555555;
         }
-        
 
         #replay-icon {
             position: absolute;
@@ -156,7 +216,7 @@
             width: 17px;
             height: 16px;
         }
-       
+
         #three-seconds {
             position: absolute;
             left: 48px;
@@ -183,6 +243,18 @@
 
     <div id="video-container">
         <div id="player"></div>
+
+        <!-- Điều khiển nằm 2 bên, giữa để trống cho phụ đề -->
+        <div id="custom-controls">
+            <div class="ctrl-group" id="left-group">
+                <button class="ctrl-btn" id="play-btn" title="Phát / Tạm dừng">▶</button>
+                <span id="time-text">0:00 / 0:00</span>
+            </div>
+            <div class="ctrl-group" id="right-group">
+                <button class="ctrl-btn" id="speed-btn" title="Tốc độ phát">1x</button>
+            </div>
+        </div>
+        <div id="seek-bar"><div id="seek-fill"></div></div>
     </div>
 
     <div id="under-bar">
@@ -205,18 +277,42 @@
                 videoId: '',
                 events: {
                     'onReady': onPlayerReady,
-                    'onError': onPlayerError
+                    'onError': onPlayerError,
+                    'onStateChange': onPlayerStateChange
                 },
                 playerVars: {
-                    'cc_load_policy': 0
+                    'cc_load_policy': 0,
+                    'controls': 0,        // ẩn thanh điều khiển của YouTube (thanh này che phụ đề)
+                    'modestbranding': 1,
+                    'rel': 0,
+                    'iv_load_policy': 3,
+                    'playsinline': 1
                 }
             });
+        }
+
+        function formatTime(s) {
+            s = Math.max(0, Math.floor(s || 0));
+            const m = Math.floor(s / 60);
+            const sec = String(s % 60).padStart(2, '0');
+            return m + ':' + sec;
+        }
+
+        function onPlayerStateChange(event) {
+            const playBtn = document.getElementById('play-btn');
+            // 1 = đang phát
+            playBtn.textContent = (event.data === 1) ? '❚❚' : '▶';
         }
 
         function onPlayerReady(event) {
             const inputUrl = document.getElementById('input-url');
             const replayButton = document.getElementById('replay-button');
             const progressBarBlue = document.getElementById('progress-bar-blue');
+            const playBtn = document.getElementById('play-btn');
+            const speedBtn = document.getElementById('speed-btn');
+            const seekBar = document.getElementById('seek-bar');
+            const seekFill = document.getElementById('seek-fill');
+            const timeText = document.getElementById('time-text');
 
             inputUrl.addEventListener('change', () => {
                 const url = inputUrl.value;
@@ -228,35 +324,67 @@
                     alert('Không thể nhận dạng ID video từ URL này.');
                 }
             });
-           
-            let isAnimating = false; // Biến để theo dõi trạng thái của animation
-           
+
+            // ----- Điều khiển riêng -----
+            playBtn.addEventListener('click', () => {
+                if (player.getPlayerState() === 1) {
+                    player.pauseVideo();
+                } else {
+                    player.playVideo();
+                }
+            });
+
+            const rates = [1, 0.75, 0.5];
+            let rateIndex = 0;
+            speedBtn.addEventListener('click', () => {
+                rateIndex = (rateIndex + 1) % rates.length;
+                player.setPlaybackRate(rates[rateIndex]);
+                speedBtn.textContent = rates[rateIndex] + 'x';
+            });
+
+            seekBar.addEventListener('click', (e) => {
+                const rect = seekBar.getBoundingClientRect();
+                const ratio = (e.clientX - rect.left) / rect.width;
+                const duration = player.getDuration();
+                if (duration) player.seekTo(duration * ratio, true);
+            });
+
+            setInterval(() => {
+                if (!player || !player.getDuration) return;
+                const cur = player.getCurrentTime();
+                const dur = player.getDuration();
+                if (dur) {
+                    seekFill.style.width = (cur / dur * 100) + '%';
+                    timeText.textContent = formatTime(cur) + ' / ' + formatTime(dur);
+                }
+            }, 250);
+
+            // ----- Nút replay 3s (giữ nguyên) -----
+            let isAnimating = false;
+
             replayButton.addEventListener('click', () => {
                 if (progressBarBlue.animation) {
-                    progressBarBlue.animation.cancel(); // Hủy animation trước đó nếu có
+                    progressBarBlue.animation.cancel();
                 }
-                // Thêm hoặc xóa class active cho button B
                 progressBarBlue.classList.toggle('active');
 
                 setTimeout(function() {
                     progressBarBlue.classList.remove('active');
-                }, 40); // 200ms là thời gian class active tồn tại
+                }, 40);
 
-                progressBarBlue.style.visibility = 'visible'; 
+                progressBarBlue.style.visibility = 'visible';
                 progressBarBlue.style.width = '677px';
 
-                // Tạo animation cho thanh progress bar
                 progressBarBlue.animation = progressBarBlue.animate(
                     [{ width: '677px' }, { width: '0px' }],
                     { duration: 3000, easing: 'linear' }
                 );
-                
-                isAnimating = true; // Đặt trạng thái animation là true
-                
+
+                isAnimating = true;
+
                 progressBarBlue.animation.onfinish = () => {
-                    isAnimating = false; // Animation hoàn tất
+                    isAnimating = false;
                     if (replayButton.matches(':hover')) {
-                        // Nếu replayButton vẫn đang được hover, hiển thị lại PBB
                         progressBarBlue.style.visibility = 'visible';
                     } else {
                         progressBarBlue.style.visibility = 'hidden';
@@ -265,22 +393,27 @@
                 };
 
                 const currentTimeX = player.getCurrentTime();
-                player.seekTo(currentTimeX - 3);
+                player.seekTo(Math.max(0, currentTimeX - 3), true);
                 toggleSubtitles(true);
             });
 
             replayButton.addEventListener('mouseenter', () => {
-
                 progressBarBlue.style.visibility = 'visible';
                 progressBarBlue.style.width = '677px';
             });
 
             replayButton.addEventListener('mouseleave', () => {
                 if (!isAnimating) {
-                    // Nếu không có animation đang diễn ra, ẩn thanh progress bar
                     progressBarBlue.style.visibility = 'hidden';
                 }
             });
+
+            // ----- Khôi phục video đã xem (chuyển vào đây để chắc chắn player đã sẵn sàng) -----
+            const savedVideoId = localStorage.getItem('videoId');
+            const savedTime = localStorage.getItem('currentTime');
+            if (savedVideoId && savedTime) {
+                player.loadVideoById(savedVideoId, parseFloat(savedTime));
+            }
         }
 
         function extractVideoId(url) {
@@ -311,21 +444,11 @@
         const firstScriptTag = document.getElementsByTagName('script')[0];
         firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
 
-        // Lưu và khôi phục trạng thái video
+        // Lưu trạng thái video khi rời trang
         window.addEventListener('beforeunload', () => {
-            if (player && player.getVideoData()) {
+            if (player && player.getVideoData && player.getVideoData()) {
                 localStorage.setItem('videoId', player.getVideoData().video_id);
                 localStorage.setItem('currentTime', player.getCurrentTime());
-            }
-        });
-
-        window.addEventListener('load', () => {
-            const savedVideoId = localStorage.getItem('videoId');
-            const savedTime = localStorage.getItem('currentTime');
-
-            if (savedVideoId && savedTime) {
-                player.loadVideoById(savedVideoId);
-                player.seekTo(parseFloat(savedTime));
             }
         });
     </script>
