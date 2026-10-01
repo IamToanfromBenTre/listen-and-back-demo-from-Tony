@@ -60,8 +60,31 @@
             left: 50%;
             transform: translateX(-50%);
             width: 800px;
-            height: 463px;
+            height: 540px;
             background: #000;
+            overflow: hidden;
+        }
+
+        /* Iframe cao hơn video (16:9 chỉ chiếm 450px) -> dư 180px viền đen.
+           Đẩy iframe lên 90px để video sát mép trên, 90px viền đen còn lại nằm ở đáy
+           để chứa dải "More videos"/logo YouTube thay vì đè lên phụ đề. */
+        #player {
+            position: absolute;
+            top: -90px;
+            left: 0;
+            width: 800px;
+            height: 630px;
+        }
+
+        /* Tấm che đen phủ dải overlay của YouTube ở đáy (không đụng vùng phụ đề) */
+        #bottom-cover {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 84px;
+            background: #000;
+            z-index: 4;
         }
 
         /* ===== Điều khiển riêng: nằm sát 2 góc dưới, chừa trống giữa cho phụ đề ===== */
@@ -69,7 +92,7 @@
             position: absolute;
             left: 0;
             right: 0;
-            bottom: 12px;
+            bottom: 26px;
             padding: 0 10px;
             display: flex;
             justify-content: space-between;
@@ -84,7 +107,7 @@
             align-items: center;
             gap: 8px;
             pointer-events: auto;
-            background: rgba(0, 0, 0, 0.55);
+            background: #1c1c1c;
             border-radius: 16px;
             padding: 0 12px;
             height: 32px;
@@ -153,7 +176,7 @@
 
         #under-bar {
             position: absolute;
-            top: 559px;
+            top: 636px;
             left: 50%;
             width: 800px;
             height: 32px;
@@ -244,6 +267,8 @@
     <div id="video-container">
         <div id="player"></div>
 
+        <div id="bottom-cover"></div>
+
         <!-- Điều khiển nằm 2 bên, giữa để trống cho phụ đề -->
         <div id="custom-controls">
             <div class="ctrl-group" id="left-group">
@@ -272,7 +297,7 @@
         // Load YouTube API
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
-                height: '463',
+                height: '630',
                 width: '800',
                 videoId: '',
                 events: {
