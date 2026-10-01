@@ -59,8 +59,8 @@
             top: 80px;
             left: 50%;
             transform: translateX(-50%);
-            width: 800px;
-            height: 463px;
+            width: 1200px;
+            height: 695px;
             background: #000;
             display: flex;
             justify-content: center;   /* video luôn nằm giữa */
@@ -74,9 +74,6 @@
 
         #video-container iframe {
             flex: none;
-            /* Chuột không "chạm" vào iframe => YouTube không hiện lớp phủ
-               (More videos, Share, Watch later, logo...) đè lên phụ đề */
-            pointer-events: none;
         }
 
         /* ===== Điều khiển riêng: nằm sát 2 góc dưới, chừa trống giữa cho phụ đề ===== */
@@ -168,7 +165,7 @@
 
         #under-bar {
             position: absolute;
-            top: 559px;
+            top: 791px;
             left: 50%;
             width: 800px;
             height: 32px;
@@ -288,8 +285,8 @@
         // Load YouTube API
         function onYouTubeIframeAPIReady() {
             player = new YT.Player('player', {
-                height: '463',
-                width: '800',
+                height: '695',
+                width: '1200',
                 videoId: '',
                 events: {
                     'onReady': onPlayerReady,
@@ -373,16 +370,6 @@
 
             // Khôi phục chế độ đã dùng lần trước
             setTheater(localStorage.getItem('theaterMode') === '1');
-
-            // Vì iframe không nhận chuột nữa, bấm vào khung video để phát / tạm dừng
-            videoContainer.addEventListener('click', (e) => {
-                if (e.target.closest('#custom-controls, #seek-bar')) return;
-                if (player.getPlayerState() === 1) {
-                    player.pauseVideo();
-                } else {
-                    player.playVideo();
-                }
-            });
 
             seekBar.addEventListener('click', (e) => {
                 const rect = seekBar.getBoundingClientRect();
