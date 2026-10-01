@@ -74,6 +74,9 @@
 
         #video-container iframe {
             flex: none;
+            /* Chuột không "chạm" vào iframe => YouTube không hiện lớp phủ
+               (More videos, Share, Watch later, logo...) đè lên phụ đề */
+            pointer-events: none;
         }
 
         /* ===== Điều khiển riêng: nằm sát 2 góc dưới, chừa trống giữa cho phụ đề ===== */
@@ -370,6 +373,16 @@
 
             // Khôi phục chế độ đã dùng lần trước
             setTheater(localStorage.getItem('theaterMode') === '1');
+
+            // Vì iframe không nhận chuột nữa, bấm vào khung video để phát / tạm dừng
+            videoContainer.addEventListener('click', (e) => {
+                if (e.target.closest('#custom-controls, #seek-bar')) return;
+                if (player.getPlayerState() === 1) {
+                    player.pauseVideo();
+                } else {
+                    player.playVideo();
+                }
+            });
 
             seekBar.addEventListener('click', (e) => {
                 const rect = seekBar.getBoundingClientRect();
