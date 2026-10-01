@@ -62,6 +62,18 @@
             width: 800px;
             height: 463px;
             background: #000;
+            display: flex;
+            justify-content: center;   /* video luôn nằm giữa */
+            transition: width 0.3s ease;
+        }
+
+        /* Chế độ nhà hát: khung đen rộng hết trang, video vẫn 800x463 ở giữa */
+        #video-container.theater {
+            width: 100%;
+        }
+
+        #video-container iframe {
+            flex: none;
         }
 
         /* ===== Điều khiển riêng: nằm sát 2 góc dưới, chừa trống giữa cho phụ đề ===== */
@@ -251,6 +263,7 @@
                 <span id="time-text">0:00 / 0:00</span>
             </div>
             <div class="ctrl-group" id="right-group">
+                <button class="ctrl-btn" id="theater-btn" title="Chế độ nhà hát">▭</button>
                 <button class="ctrl-btn" id="speed-btn" title="Tốc độ phát">1x</button>
             </div>
         </div>
@@ -313,6 +326,8 @@
             const seekBar = document.getElementById('seek-bar');
             const seekFill = document.getElementById('seek-fill');
             const timeText = document.getElementById('time-text');
+            const theaterBtn = document.getElementById('theater-btn');
+            const videoContainer = document.getElementById('video-container');
 
             inputUrl.addEventListener('change', () => {
                 const url = inputUrl.value;
@@ -341,6 +356,20 @@
                 player.setPlaybackRate(rates[rateIndex]);
                 speedBtn.textContent = rates[rateIndex] + 'x';
             });
+
+            // ----- Chế độ nhà hát -----
+            function setTheater(on) {
+                videoContainer.classList.toggle('theater', on);
+                theaterBtn.textContent = on ? '▯' : '▭';
+                localStorage.setItem('theaterMode', on ? '1' : '0');
+            }
+
+            theaterBtn.addEventListener('click', () => {
+                setTheater(!videoContainer.classList.contains('theater'));
+            });
+
+            // Khôi phục chế độ đã dùng lần trước
+            setTheater(localStorage.getItem('theaterMode') === '1');
 
             seekBar.addEventListener('click', (e) => {
                 const rect = seekBar.getBoundingClientRect();
